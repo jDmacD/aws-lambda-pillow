@@ -12,16 +12,23 @@ A set of Lambda functions, implemented using Pillow, to cover day-to-day use cas
 
 The Lambda functions are designed to integrate with S3, API Gateway and will eventually include a Cloudformation template.
 
-## Deployment Package
+## Image Return Modes
 
-To enable support for the broadest possible spectrum of image formats a virtualenv deployment package is required.
+At the moment Lambda, and API Gateway, have significant restrictions on what can be returned. As such image are returned two ways:
 
-To ensure compability, the virtualenv bundle has been built using the same [Linux AMI](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html) that Lambda utilises.
+* 64-bit encoded string (up to 6mb)
+* Signed redirect to S3
 
 ## Supported Formats
 
 * JPEG
 * TIFF
 * PNG
+
+## Deployment Package
+
+To enable support for the broadest possible spectrum of image formats a virtualenv deployment package is required.
+To ensure compability, the virtualenv bundle has been built using the same [Linux AMI](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html) that Lambda utilises.
+
 
 
