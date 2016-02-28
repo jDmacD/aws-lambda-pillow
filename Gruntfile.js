@@ -44,6 +44,7 @@ module.exports = function(grunt) {
 
     // These plugins provide necessary tasks
     grunt.loadNpmTasks('grunt-aws-sdk');
+    grunt.loadNpmTasks('grunt-aws-s3');
     // Default task
     grunt.registerTask('default', ['aws:launchEC2Instance']);
 };
