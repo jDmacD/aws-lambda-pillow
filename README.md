@@ -32,13 +32,15 @@ a `config.json` file is required in the root of the project with the following a
 
 ```json
 {
-  "accessKeyId": "<YOUR KEY ID>",
-  "secretAccessKey": "< YOUR ACCESS KEY>",
+  "accessKeyId": "< YOUR KEY ID >",
+  "secretAccessKey": "< YOUR ACCESS KEY >",
   "region": "eu-west-1",
   "KeyName": "<YOUR EC2 pem name>",
   "SecurityGroupIds": [
     "<YOUR EC2 SEC. GROUP ID>"
-  ]
+  ],
+  "codeBucket":"< YOUR CODE BUCKET >",
+  "imageBucket":"< YOUR IMAGE BUCKET >"
 }
 
 ```
