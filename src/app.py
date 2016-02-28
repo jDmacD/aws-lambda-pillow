@@ -76,6 +76,7 @@ def composite_handler(event, context):
 	Type = mimetypes.guess_type(Key)[0]
 	extension = mimetypes.guess_extension(Type)
 	Key = event['_id'] + extension
+	extension =  extension.split('.')[1]
 
 	print(Type, extension, Key)
 
