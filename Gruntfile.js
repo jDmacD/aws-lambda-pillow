@@ -1,3 +1,9 @@
+var fs = require('fs-extra');
+var path = require('path');
+var _ = require('lodash');
+var async = require('async');
+var archiver = require('archiver');
+
 module.exports = function(grunt) {
     'use strict';
     // Project configuration
@@ -39,6 +45,33 @@ module.exports = function(grunt) {
                     }
                 }
             }
+        },
+        aws_s3: {
+            options: {
+                accessKeyId: '<%= config.accessKeyId %>', // Use the variables
+                secretAccessKey: '<%= config.secretAccessKey %>', // You can also use env variables
+                region: '<%= config.region %>',
+                uploadConcurrency: 5, // 5 simultaneous uploads
+                downloadConcurrency: 5 // 5 simultaneous downloads 
+            },
+            lambda: {
+                options: {
+                    bucket: '<%= config.codeBucket %>',
+                    differential: false
+                },
+                files: [{
+                    action: 'upload',
+                    expand: true,
+                    cwd: 'dist/lambda/',
+                    src: ['**'],
+                    dest: 'lambda/'
+                }]
+            },
+            'lambda-prep':{
+                image:{
+                    src: 'src/'
+                }
+            }
         }
     });
 
@@ -47,4 +80,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-aws-s3');
     // Default task
     grunt.registerTask('default', ['aws:launchEC2Instance']);
+
+    grunt.registerTask('lambda-prep', 'prep code for lambda upload', function() {
+
+    });
 };
