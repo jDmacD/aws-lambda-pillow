@@ -24,11 +24,26 @@ At the moment Lambda, and API Gateway, have significant restrictions on what can
 * JPEG
 * TIFF
 * PNG
+* WebP
+
+## Setup
+
+a `config.json` file is required in the root of the project with the following attributes
+
+```json
+{
+  "accessKeyId": "<YOUR KEY ID>",
+  "secretAccessKey": "< YOUR ACCESS KEY>",
+  "region": "eu-west-1",
+  "KeyName": "<YOUR EC2 pem name>",
+  "SecurityGroupIds": [
+    "<YOUR EC2 SEC. GROUP ID>"
+  ]
+}
+
+```
 
 ## Deployment Package
 
 To enable support for the broadest possible spectrum of image formats a virtualenv deployment package is required.
 To ensure compability, the virtualenv bundle has been built using the same [Linux AMI](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html) that Lambda utilises.
-
-
-
