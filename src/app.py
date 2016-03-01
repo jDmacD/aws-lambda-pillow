@@ -4,12 +4,10 @@
 
 import os
 import sys
-
+import hashlib
 import mimetypes
+# add webp to mime library, as it is a draft format
 mimetypes.add_type('image/webp', '.webp', strict=False)
-mimetypes.add_type('image/jpeg', '.jpg', strict=False)
-mimetypes.add_type('image/jpeg', '.jpeg', strict=False)
-mimetypes.init()
 
 from eventlet import *
 patcher.monkey_patch(all=True)
@@ -26,7 +24,7 @@ from PIL import ImageOps
 
 import time
 import itertools
-import json
+import simplejson as json
 
 
 s3 = boto3.resource('s3')
@@ -34,22 +32,25 @@ s3Client = boto3.client('s3')
 pool = GreenPool()
 pool.waitall()
 
-def clean_extension(extension):
+default_bucket = 'components.jdmacd'
 
-	if extension.lower() == 'jpg' or  extension.lower() == 'jpeg':
+def clean_format(format):
+
+	if format.lower() == 'jpg' or  format.lower() == 'jpeg':
 		return 'jpeg'
-	elif extension.lower() == 'tiff' or extension.lower() == 'tif':
+	elif format.lower() == 'tiff' or format.lower() == 'tif':
 		return 'tiff'
-	elif extension.lower() == 'webp':
+	elif format.lower() == 'webp':
 		return 'webp'
-	elif extension.lower() == 'png':
+	elif format.lower() == 'png':
 		return 'png'
-	elif extension.lower() == 'bmp':
+	elif format.lower() == 'bmp':
 		return 'bmp'
 	else:
-		return extension
+		return format
 
 def composite_layers(layers):
+
 	base_img = None
 
 	for layer in pool.imap(get_image, layers):
@@ -80,17 +81,22 @@ def data_url(img, quality, format, Type):
 
 	return dataUrl
 
-def S3_url(Key):
+def S3_url(Key, Bucket):
 
-	return s3Client.generate_presigned_url('get_object', Params = {'Bucket': 'components.jdmacd', 'Key': Key}, ExpiresIn = 3600)
+	return s3Client.generate_presigned_url('get_object', Params = {'Bucket': Bucket, 'Key': Key}, ExpiresIn = 3600)
 
 def get_image(layer):
 
 	key = layer['key']
 
+	try:
+		bucket = layer['bucket']
+	except:
+		bucket = default_bucket
+
 	start_time = time.time()
 
-	object = s3.Object('components.jdmacd', key)
+	object = s3.Object(bucket, key)
 
 	try:
 		res = object.get()
@@ -103,9 +109,9 @@ def get_image(layer):
 
 	return layer
 
-def save_image(img, quality, format, Type, Key):
+def save_image(img, quality, format, Type, Key, Bucket):
 
-	object = s3.Object('components.jdmacd', Key)
+	object = s3.Object(Bucket, Key)
 	image_buffer = BytesIO()
 	img.save(image_buffer, quality=quality, format=format)
 	res = object.put(Body=image_buffer.getvalue(), ContentType=Type)
@@ -115,17 +121,37 @@ def save_image(img, quality, format, Type, Key):
 def composite_handler(event, context):
 
 	quality = event['quality']
-	extension = clean_extension(event['extension'])
-	Key =  event['_id'] + '.' + extension
+	mode = event['mode']
+	format = clean_format(event['format'])
+
+	try:
+		Bucket = event['bucket']
+	except:
+		Bucket = default_bucket
+
+	try:
+		Key =  event['name'] + '.' + format
+	except:
+		Key = hashlib.md5(json.dumps(event)).hexdigest() + '.' + format
+
 	MimeType = mimetypes.guess_type(Key, strict=False)[0]
 
-	composite_image = composite_layers(event['layers'])
+	print(quality, mode, format, Bucket, Key, MimeType)
 
-	if event['dataUrl']:
-		print('returning as dataUrl')
-		return data_url(composite_image, quality=quality, format=extension, Type=MimeType)
-	else:
-		save_image(composite_image, quality=quality, format=extension, Type=MimeType, Key=Key)
-		return S3_url(Key)
+	if mode == 'data':
+
+		composite_image = composite_layers(event['layers'])
+
+		return data_url(composite_image, quality=quality, format=format, Type=MimeType)
+
+	elif mode == 's3':
+
+		try:
+			s3Client.head_object(Bucket=Bucket, Key=Key)
+			return S3_url(Key=Key, Bucket=Bucket)
+		except:
+			composite_image = composite_layers(event['layers'])
+			save_image(composite_image, quality=quality, format=format, Type=MimeType, Key=Key ,Bucket=Bucket)
+			return S3_url(Key=Key, Bucket=Bucket)
 
 
