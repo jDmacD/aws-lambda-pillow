@@ -142,7 +142,8 @@ module.exports = function(grunt) {
                         zip.file('config.json', JSON.stringify(config))
 
                         var buffer = zip.generate({
-                            type: "nodebuffer"
+                            type: "nodebuffer",
+                            compression:'DEFLATE'
                         });
 
                         fs.writeFile(envZipFinal, buffer, function(err) {
