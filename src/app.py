@@ -61,29 +61,27 @@ def to_pixels(part, whole):
 	elif part_type is unicode:
 		#part is in percentage, convert to pixels
 		pixels = float(whole) /100 * float(part)
-		print(str(part) + ' percent is ' + str(pixels) + ' pixels')
 		return pixels
 
 def unknown_side(known, side_1, side_2):
 
-	print(known, side_1, side_2)
 	return float(known) * float(side_1) / float(side_2)
 
-def composite_layers(layers):
+def composite_images(images):
 
 	base_img = None
 
-	for layer in pool.imap(get_image, layers):
+	for image in pool.imap(get_image, images):
 
-		layer = resize_layer(layer)
+		image = resize_image(image)
 
-		img = layer['img']
+		img = image['img']
 
-		if type(layer['x']) is float or type(layer['x']) is int:
-			x = int(layer['x'])
+		if type(image['x']) is float or type(image['x']) is int:
+			x = int(image['x'])
 
-		if type(layer['y']) is float or type(layer['y']) is int:
-			y = int(layer['y'])
+		if type(image['y']) is float or type(image['y']) is int:
+			y = int(image['y'])
 
 		if base_img == None:
 			base_img = Image.new('RGB', img.size)
@@ -95,19 +93,19 @@ def composite_layers(layers):
 
 	return base_img
 
-def resize_layer(layer):
+def resize_image(image):
 
 	try:
-		height = layer['height']
+		height = image['height']
 	except:
 		height = None
 
 	try:
-		width = layer['width']
+		width = image['width']
 	except:
 		width = None
 
-	i_width, i_height = layer['img'].size
+	i_width, i_height = image['img'].size
 
 	if height == None and width == None:
 		# No height or width supplied
@@ -126,9 +124,9 @@ def resize_layer(layer):
 			width = unknown_side(known=to_pixels(height, i_height), side_1=i_width, side_2=i_height)
 
 
-	layer['img'] = layer['img'].resize((int(width),int(height)), Image.ANTIALIAS)
+	image['img'] = image['img'].resize((int(width),int(height)), Image.ANTIALIAS)
 
-	return layer
+	return image
 
 def data_url(img, quality, format, ContentType):
 
@@ -147,12 +145,12 @@ def S3_url(Key, Bucket):
 
 	return s3Client.generate_presigned_url('get_object', Params = {'Bucket': Bucket, 'Key': Key}, ExpiresIn = 3600)
 
-def get_image(layer):
+def get_image(image):
 
-	key = layer['key']
+	key = image['key']
 
 	try:
-		bucket = layer['bucket']
+		bucket = image['bucket']
 	except:
 		bucket = bucket_in
 
@@ -167,9 +165,9 @@ def get_image(layer):
 	
 	print('get success: ' + key + ' in ' + str(time.time() - start_time))
 
-	layer['img'] = Image.open(res['Body'])
+	image['img'] = Image.open(res['Body'])
 
-	return layer
+	return image
 
 def save_image(img, quality, format, ContentType, Key, Bucket):
 
@@ -200,7 +198,7 @@ def composite_handler(event, context):
 
 	if mode == 'data':
 
-		composite_image = composite_layers(event['layers'])
+		composite_image = composite_images(event['images'])
 
 		return data_url(composite_image, quality=quality, format=format, ContentType=ContentType)
 
@@ -210,7 +208,7 @@ def composite_handler(event, context):
 			s3Client.head_object(Bucket=Bucket, Key=Key)
 			return S3_url(Key=Key, Bucket=Bucket)
 		except:
-			composite_image = composite_layers(event['layers'])
+			composite_image = composite_images(event['images'])
 			save_image(composite_image, quality=quality, format=format, ContentType=ContentType, Key=Key ,Bucket=Bucket)
 			return S3_url(Key=Key, Bucket=Bucket)
 
