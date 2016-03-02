@@ -18,7 +18,7 @@ module.exports = function(grunt) {
             ' Licensed <%= props.license %> */\n',
         // Task configuration
         config: grunt.file.readJSON('config.json'),
-        userData: grunt.file.read('ec2/userData.sh', {
+        userData: grunt.file.read('aws/ec2/userData.sh', {
             encoding: 'base64'
         }),
         aws: {
@@ -92,7 +92,11 @@ module.exports = function(grunt) {
         'lambda-prep': {
             app: {
                 src: 'src/app.py',
-                dest: 'dist/lambda/'
+                dest: 'dist/lambda/',
+                config:{
+                    bucket_in:'<%= config.imageBucket %>',
+                    bucket_out:'<%= config.imageBucket %>'
+                }
             }
         }
     });
@@ -110,6 +114,7 @@ module.exports = function(grunt) {
         var done = this.async();
         var src = this.data.src;
         var dest = this.data.dest;
+        var config = this.data.config;
 
         var envZip = 'env.zip';
         var envZipFinal = dest + envZip;
@@ -118,16 +123,24 @@ module.exports = function(grunt) {
 
         fs.readFile(envZipFinal, function(err, data) {
             if (err) {
+
                 throw err;
                 done();
+
             } else {
+
                 var zip = new JSZip(data);
+
                 fs.readFile(src, function(err, data) {
                     if (err) {
+
                         throw err;
                         done();
+
                     } else {
                         zip.file(src.split('/')[1], data);
+                        zip.file('config.json', JSON.stringify(config))
+
                         var buffer = zip.generate({
                             type: "nodebuffer"
                         });
