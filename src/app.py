@@ -39,18 +39,35 @@ bucket_out = config['bucket_out']
 
 def clean_format(format):
 
-	if format.lower() == 'jpg' or  format.lower() == 'jpeg':
+	if format.lower()  in ['jpg', 'jpeg']:
 		return 'jpeg'
-	elif format.lower() == 'tiff' or format.lower() == 'tif':
+	elif format.lower() in ['tiff', 'tif']:
 		return 'tiff'
-	elif format.lower() == 'webp':
+	elif format.lower() in ['webp']:
 		return 'webp'
-	elif format.lower() == 'png':
+	elif format.lower() in ['png']:
 		return 'png'
-	elif format.lower() == 'bmp':
+	elif format.lower() == ['bmp']:
 		return 'bmp'
 	else:
 		return format
+
+def to_pixels(part, whole):
+
+	part_type = type(part)
+	if part_type is float or part_type is int:
+		#part is in pixels
+		return part
+	elif part_type is unicode:
+		#part is in percentage, convert to pixels
+		pixels = float(whole) /100 * float(part)
+		print(str(part) + ' percent is ' + str(pixels) + ' pixels')
+		return pixels
+
+def unknown_side(known, side_1, side_2):
+
+	print(known, side_1, side_2)
+	return float(known) * float(side_1) / float(side_2)
 
 def composite_layers(layers):
 
@@ -81,28 +98,35 @@ def composite_layers(layers):
 def resize_layer(layer):
 
 	try:
-		h_type = type(layer['height'])
-		if h_type is float or h_type is int:
-			height = int(layer['height'])
-			
-		elif h_type is unicode:
-			# height as a percentage
-			height = int((layer['img'].size[1] / 100) * int(layer['height']))
-			print(height)
+		height = layer['height']
 	except:
+		height = None
 
 	try:
-		w_type = type(layer['width'])
-		if w_type is float or w_type is int:
-			width = int(layer['width'])
-
-		elif w_type is unicode:
-			# width as a percentage
-			width = int((layer['img'].size[0] / 100) * int(layer['width']))
-			print(width)
+		width = layer['width']
 	except:
+		width = None
 
-	layer['img'] = layer['img'].resize((width,height), Image.ANTIALIAS)
+	i_width, i_height = layer['img'].size
+
+	if height == None and width == None:
+		# No height or width supplied
+		print('no height or width')
+	else:
+		if height != None:
+			height = to_pixels(part=height, whole=i_height)
+		else:
+			# Calculate height from width
+			height = unknown_side(known=to_pixels(width, i_width), side_1=i_height, side_2=i_width)
+		
+		if width != None:
+			width = to_pixels(part=width, whole=i_width)
+		else:
+			# Calulate width from height
+			width = unknown_side(known=to_pixels(height, i_height), side_1=i_width, side_2=i_height)
+
+
+	layer['img'] = layer['img'].resize((int(width),int(height)), Image.ANTIALIAS)
 
 	return layer
 
@@ -110,9 +134,9 @@ def data_url(img, quality, format, ContentType):
 
 	start_time = time.time()
 
-	image_buffer = BytesIO()
-	img.save(image_buffer, quality=quality, format=format)
-	imgStr = base64.b64encode(image_buffer.getvalue())
+	img_buffer = BytesIO()
+	img.save(img_buffer, quality=quality, format=format)
+	imgStr = base64.b64encode(img_buffer.getvalue())
 	dataUrl = 'data:' + ContentType +';base64,' + imgStr.decode('utf-8')
 
 	print('dataUrl conversion in ' + str(time.time() - start_time))
