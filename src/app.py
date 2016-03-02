@@ -17,7 +17,6 @@ import botocore
 
 import base64
 from io import BytesIO
-from io import StringIO
 
 from PIL import Image
 from PIL import ImageOps
@@ -32,7 +31,11 @@ s3Client = boto3.client('s3')
 pool = GreenPool()
 pool.waitall()
 
-default_bucket = 'components.jdmacd'
+with open('config.json') as data_file:    
+    config = json.load(data_file)
+
+bucket_in = config['bucket_in']
+bucket_out = config['bucket_out']
 
 def clean_format(format):
 
@@ -55,27 +58,62 @@ def composite_layers(layers):
 
 	for layer in pool.imap(get_image, layers):
 
+		layer = resize_layer(layer)
+
 		img = layer['img']
-		offset = (layer['x'], layer['y'])
+
+		if type(layer['x']) is float or type(layer['x']) is int:
+			x = int(layer['x'])
+
+		if type(layer['y']) is float or type(layer['y']) is int:
+			y = int(layer['y'])
 
 		if base_img == None:
 			base_img = Image.new('RGB', img.size)
 
 		if img.mode == 'RGBA':
-			base_img.paste(img, offset, img)
+			base_img.paste(img, (x,y), img)
 		else:	
-			base_img.paste(img, offset)
+			base_img.paste(img, (x,y))
 
 	return base_img
 
-def data_url(img, quality, format, Type):
+def resize_layer(layer):
+
+	try:
+		h_type = type(layer['height'])
+		if h_type is float or h_type is int:
+			height = int(layer['height'])
+			
+		elif h_type is unicode:
+			# height as a percentage
+			height = int((layer['img'].size[1] / 100) * int(layer['height']))
+			print(height)
+	except:
+
+	try:
+		w_type = type(layer['width'])
+		if w_type is float or w_type is int:
+			width = int(layer['width'])
+
+		elif w_type is unicode:
+			# width as a percentage
+			width = int((layer['img'].size[0] / 100) * int(layer['width']))
+			print(width)
+	except:
+
+	layer['img'] = layer['img'].resize((width,height), Image.ANTIALIAS)
+
+	return layer
+
+def data_url(img, quality, format, ContentType):
 
 	start_time = time.time()
 
 	image_buffer = BytesIO()
 	img.save(image_buffer, quality=quality, format=format)
 	imgStr = base64.b64encode(image_buffer.getvalue())
-	dataUrl = 'data:' + Type +';base64,' + imgStr.decode('utf-8')
+	dataUrl = 'data:' + ContentType +';base64,' + imgStr.decode('utf-8')
 
 	print('dataUrl conversion in ' + str(time.time() - start_time))
 
@@ -92,7 +130,7 @@ def get_image(layer):
 	try:
 		bucket = layer['bucket']
 	except:
-		bucket = default_bucket
+		bucket = bucket_in
 
 	start_time = time.time()
 
@@ -109,12 +147,12 @@ def get_image(layer):
 
 	return layer
 
-def save_image(img, quality, format, Type, Key, Bucket):
+def save_image(img, quality, format, ContentType, Key, Bucket):
 
 	object = s3.Object(Bucket, Key)
 	image_buffer = BytesIO()
 	img.save(image_buffer, quality=quality, format=format)
-	res = object.put(Body=image_buffer.getvalue(), ContentType=Type)
+	res = object.put(Body=image_buffer.getvalue(), ContentType=ContentType)
 	return res
 
 
@@ -127,22 +165,20 @@ def composite_handler(event, context):
 	try:
 		Bucket = event['bucket']
 	except:
-		Bucket = default_bucket
+		Bucket = bucket_out
 
 	try:
 		Key =  event['name'] + '.' + format
 	except:
 		Key = hashlib.md5(json.dumps(event)).hexdigest() + '.' + format
 
-	MimeType = mimetypes.guess_type(Key, strict=False)[0]
-
-	print(quality, mode, format, Bucket, Key, MimeType)
+	ContentType = mimetypes.guess_type(Key, strict=False)[0]
 
 	if mode == 'data':
 
 		composite_image = composite_layers(event['layers'])
 
-		return data_url(composite_image, quality=quality, format=format, Type=MimeType)
+		return data_url(composite_image, quality=quality, format=format, ContentType=ContentType)
 
 	elif mode == 's3':
 
@@ -151,7 +187,7 @@ def composite_handler(event, context):
 			return S3_url(Key=Key, Bucket=Bucket)
 		except:
 			composite_image = composite_layers(event['layers'])
-			save_image(composite_image, quality=quality, format=format, Type=MimeType, Key=Key ,Bucket=Bucket)
+			save_image(composite_image, quality=quality, format=format, ContentType=ContentType, Key=Key ,Bucket=Bucket)
 			return S3_url(Key=Key, Bucket=Bucket)
 
 
