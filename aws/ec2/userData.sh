@@ -37,6 +37,8 @@ pip install --upgrade pip
 pip install --verbose --use-wheel pillow
 pip install --verbose --use-wheel simplejson
 pip install --verbose --use-wheel eventlet
+pip install --verbose --use-wheel requests
+#pip install --verbose --use-wheel boto3
 deactivate
 
 echo "zip lib and lib64"
