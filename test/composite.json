@@ -1,25 +1,25 @@
 {
-  "name": "test",
+  "Key": "out/test",
   "format": "webp",
-  "mode": "data",
+  "mode": "S3URL",
   "quality": 40,
-  "layers": [
+  "images": [
     {
-      "key": "back.webp",
+      "Key": "back.webp",
       "x": 0,
       "y": 0,
       "height": 200,
       "width": 200
     },
     {
-      "key": "mid.webp",
+      "Key": "mid.webp",
       "x": 100,
       "y": 100,
       "height": 200,
       "width": 200
     },
     {
-      "key": "fore.webp",
+      "Key": "fore.webp",
       "x": 0,
       "y": 0,
       "height": 200,
