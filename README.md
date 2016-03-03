@@ -17,7 +17,7 @@ The Lambda functions are designed to integrate with S3, API Gateway and will eve
 At the moment Lambda, and API Gateway, have significant restrictions on what can be returned. As such the are several options:
 
 * 64-bit encoded string (up to 6mb)
-* Signed S3 URL
+* Signed S3 URL (unlimited size)
 * JSON: `{"Bucket": "<YOUR IMAGE BUCKET>", "Key":"<YOUR IMAGE KEY>"}`
 
 ## Supported Formats
@@ -35,15 +35,15 @@ a `config.json` file is required in the root of the project with the following a
 
 ```json
 {
-  "accessKeyId": "< YOUR KEY ID >",
-  "secretAccessKey": "< YOUR ACCESS KEY >",
-  "region": "eu-west-1",
-  "KeyName": "<YOUR EC2 pem name>",
+  "accessKeyId": "< REQUIRED: YOUR KEY ID >",
+  "secretAccessKey": "<  REQUIRED: YOUR ACCESS KEY >",
+  "region": "< REQUIRED: YOUR AWS REGION >",
+  "codeBucket":"< REQUIRED: YOUR CODE BUCKET >",
+  "imageBucket":"< REQUIRED: YOUR IMAGE BUCKET >",
+  "KeyName": "< OPTIONAL: YOUR EC2 PEM NAME >",
   "SecurityGroupIds": [
-    "<YOUR EC2 SEC. GROUP ID>"
-  ],
-  "codeBucket":"< YOUR CODE BUCKET >",
-  "imageBucket":"< YOUR IMAGE BUCKET >"
+    "< OPTIONAL: YOUR EC2 SECURITY GROUP ID >"
+  ]
 }
 
 ```
