@@ -15,6 +15,8 @@ patcher.monkey_patch(all=True)
 import boto3
 import botocore
 
+import requests
+
 import base64
 from io import BytesIO
 
@@ -159,21 +161,26 @@ def S3_url(Key, Bucket):
 
 def get_image(image):
 
-	Key = image['Key']
+	if 'Key' in image:
+		Key = image['Key']
 
-	try:
-		bucket = image['bucket']
-	except:
-		bucket = bucket_in
+		try:
+			bucket = image['bucket']
+		except:
+			bucket = bucket_in
 
-	object = s3.Object(bucket, Key)
+		object = s3.Object(bucket, Key)
 
-	try:
-		res = object.get()
-	except:
-		print('get fail: ' + Key)
-	
-	image['img'] = Image.open(res['Body'])
+		try:
+			res = object.get()
+		except:
+			print('get fail: ' + Key)
+		
+		image['img'] = Image.open(res['Body'])
+
+	elif 'url' in image:
+		# http://pillow.readthedocs.org/en/3.1.x/releasenotes/2.8.0.html
+		image['img'] = Image.open(requests.get(image['url'], stream=True).raw)
 
 	return image
 
