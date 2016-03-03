@@ -47,10 +47,12 @@ def clean_format(format):
 		return 'webp'
 	elif format.lower() in ['png']:
 		return 'png'
-	elif format.lower() == ['bmp']:
+	elif format.lower() in ['bmp']:
 		return 'bmp'
+	elif format.lower() in ['gif']:
+		return 'gif'
 	else:
-		return format
+		return format.lower()
 
 def to_pixels(part, whole):
 
@@ -59,7 +61,7 @@ def to_pixels(part, whole):
 		#part is in pixels
 		return part
 	elif part_type is unicode:
-		#part is in percentage, convert to pixels
+		#part is a percentage, convert to pixels
 		pixels = float(whole) /100 * float(part)
 		return pixels
 
@@ -77,19 +79,30 @@ def composite_images(images):
 
 		img = image['img']
 
-		if type(image['x']) is float or type(image['x']) is int:
-			x = int(image['x'])
-
-		if type(image['y']) is float or type(image['y']) is int:
-			y = int(image['y'])
+		if 'r' in image:
+			img = img.rotate(int(image['r']), expand=True)
 
 		if base_img == None:
 			base_img = Image.new('RGB', img.size)
 
+		if 'x' in image:
+			x = to_pixels(image['x'], base_img.size[0])
+		elif 'cx' in image:
+			x = to_pixels(image['cx'], base_img.size[0]) - (img.size[0]/2)
+		else:
+			x = 0
+
+		if 'y' in image:
+			y = to_pixels(image['y'], base_img.size[1])
+		if 'cy' in image:
+			y = to_pixels(image['cy'], base_img.size[1]) - (img.size[1]/2)
+		else:
+			y = 0
+
 		if img.mode == 'RGBA':
-			base_img.paste(img, (x,y), img)
+			base_img.paste(img, ( int(x) , int(y) ), img)
 		else:	
-			base_img.paste(img, (x,y))
+			base_img.paste(img, ( int(x) , int(y) ) )
 
 	return base_img
 
@@ -105,12 +118,13 @@ def resize_image(image):
 	except:
 		width = None
 
-	i_width, i_height = image['img'].size
-
 	if height == None and width == None:
-		# No height or width supplied
-		print('no height or width')
+		# No height or width supplied, return as is
+		return image
 	else:
+
+		i_width, i_height = image['img'].size
+
 		if height != None:
 			height = to_pixels(part=height, whole=i_height)
 		else:
@@ -123,10 +137,8 @@ def resize_image(image):
 			# Calulate width from height
 			width = unknown_side(known=to_pixels(height, i_height), side_1=i_width, side_2=i_height)
 
-
-	image['img'] = image['img'].resize((int(width),int(height)), Image.ANTIALIAS)
-
-	return image
+		image['img'] = image['img'].resize((int(width),int(height)), Image.ANTIALIAS)
+		return image
 
 def data_url(img, quality, format, ContentType):
 
@@ -147,24 +159,20 @@ def S3_url(Key, Bucket):
 
 def get_image(image):
 
-	key = image['key']
+	Key = image['Key']
 
 	try:
 		bucket = image['bucket']
 	except:
 		bucket = bucket_in
 
-	start_time = time.time()
-
-	object = s3.Object(bucket, key)
+	object = s3.Object(bucket, Key)
 
 	try:
 		res = object.get()
 	except:
-		print('get fail: ' + key)
+		print('get fail: ' + Key)
 	
-	print('get success: ' + key + ' in ' + str(time.time() - start_time))
-
 	image['img'] = Image.open(res['Body'])
 
 	return image
@@ -182,7 +190,6 @@ def composite_handler(event, context):
 
 	quality = event['quality']
 	mode = event['mode']
-	format = clean_format(event['format'])
 
 	try:
 		Bucket = event['bucket']
@@ -190,19 +197,25 @@ def composite_handler(event, context):
 		Bucket = bucket_out
 
 	try:
-		Key =  event['name'] + '.' + format
+		Key =  event['Key']
 	except:
-		Key = hashlib.md5(json.dumps(event)).hexdigest() + '.' + format
+		Key = hashlib.md5(json.dumps(event)).hexdigest()
+
+	if '.' in Key:
+		format = clean_foemat(Key.split('.')[1])
+	else:
+		format = clean_format(event['format'])
+		Key = Key + '.' + format
+
 
 	ContentType = mimetypes.guess_type(Key, strict=False)[0]
 
-	if mode == 'data':
+	if mode == 'DATA':
 
 		composite_image = composite_images(event['images'])
-
 		return data_url(composite_image, quality=quality, format=format, ContentType=ContentType)
 
-	elif mode == 's3':
+	elif mode == 'S3URL':
 
 		try:
 			s3Client.head_object(Bucket=Bucket, Key=Key)
@@ -211,5 +224,17 @@ def composite_handler(event, context):
 			composite_image = composite_images(event['images'])
 			save_image(composite_image, quality=quality, format=format, ContentType=ContentType, Key=Key ,Bucket=Bucket)
 			return S3_url(Key=Key, Bucket=Bucket)
+
+	elif mode == 'S3':
+
+		try:
+			res = s3Client.head_object(Bucket=Bucket, Key=Key)
+			print(res)
+			return {'Bucket': Bucket, 'Key':Key}
+		except:
+			composite_image = composite_images(event['images'])
+			res = save_image(composite_image, quality=quality, format=format, ContentType=ContentType, Key=Key ,Bucket=Bucket)
+			print(res)
+			return {'Bucket': Bucket, 'Key':Key}
 
 
