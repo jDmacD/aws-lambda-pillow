@@ -16,6 +16,7 @@ import boto3
 import botocore
 
 import requests
+import urllib
 
 import base64
 from io import BytesIO
@@ -36,8 +37,11 @@ pool.waitall()
 with open('config.json') as data_file:    
     config = json.load(data_file)
 
-bucket_in = config['bucket_in']
-bucket_out = config['bucket_out']
+try:
+	bucket_in = config['bucket_in']
+	bucket_out = config['bucket_out']
+except:
+	print('default buckets not loaded')
 
 def clean_format(format):
 
@@ -209,7 +213,7 @@ def composite_handler(event, context):
 		Key = hashlib.md5(json.dumps(event)).hexdigest()
 
 	if '.' in Key:
-		format = clean_foemat(Key.split('.')[1])
+		format = clean_format(Key.split('.')[1])
 	else:
 		format = clean_format(event['format'])
 		Key = Key + '.' + format
@@ -244,4 +248,44 @@ def composite_handler(event, context):
 			print(res)
 			return {'Bucket': Bucket, 'Key':Key}
 
+def s3_converter(event, context):
 
+	bucket = event['Records'][0]['s3']['bucket']['name']
+	key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).decode('utf8')
+	
+	image = {'bucket':bucket,'Key': key}
+
+	if 'width' in config:
+		image['width'] = config['width']
+
+	if 'height' in config:
+		image['height'] = config['height']
+
+	if 'keepOld' in config:
+		keep_old = config['keepOld']
+	else:
+		keep_old = True
+
+	if 'format' in config:
+		format = clean_format(config['format'])
+	else:
+		format = key.split('.')[1]
+
+	if 'quality' in config:
+		quality = config['quality']
+	else:
+		quality = 100
+
+	Key = key.split('.')[0] + '.' + format
+
+	ContentType = mimetypes.guess_type(Key, strict=False)[0]
+
+	img = get_image(image)['img']
+
+	res = save_image(img, quality, format, ContentType, Key, bucket)
+
+	if not keep_old:
+		object = s3.Object(bucket, key)
+		res = object.delete()
+
+	return res

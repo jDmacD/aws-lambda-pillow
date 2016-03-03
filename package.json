@@ -18,7 +18,7 @@
     "virtualenv"
   ],
   "author": "James D. MacDonald",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/jDmacD/aws-lambda-pillow/issues"
   },
@@ -26,13 +26,16 @@
   "devDependencies": {
     "async": "^1.5.2",
     "aws-sdk": "^2.2.39",
+    "chai": "^3.5.0",
     "fs-extra": "^0.26.5",
     "grunt": "^0.4.5",
     "grunt-aws-s3": "^0.14.4",
     "grunt-aws-sdk": "jDmacD/grunt-aws-sdk",
     "grunt-cli": "^0.1.13",
+    "grunt-mocha-test": "^0.12.7",
     "grunt-replace": "^0.11.0",
     "jszip": "^2.5.0",
-    "lodash": "^4.5.1"
+    "lodash": "^4.5.1",
+    "mocha": "^2.4.5"
   }
 }

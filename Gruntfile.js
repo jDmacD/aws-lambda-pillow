@@ -46,13 +46,22 @@ module.exports = function(grunt) {
                     }
                 }
             },
-            updateLambda: {
+            'updateLambda-composite': {
                 service: 'lambda',
                 method: 'updateFunctionCode',
                 params: {
                     FunctionName: 'composite',
                     S3Bucket: '<%= config.codeBucket %>',
-                    S3Key: 'lambda/env.zip'
+                    S3Key: 'lambda/composite.zip'
+                }
+            },
+            'updateLambda-webpConverter': {
+                service: 'lambda',
+                method: 'updateFunctionCode',
+                params: {
+                    FunctionName: 'webpConverter',
+                    S3Bucket: '<%= config.codeBucket %>',
+                    S3Key: 'lambda/webpConverter.zip'
                 }
             }
         },
@@ -90,12 +99,20 @@ module.exports = function(grunt) {
             }
         },
         'lambda-prep': {
-            app: {
+            composite: {
                 src: 'src/app.py',
                 dest: 'dist/lambda/',
-                config:{
-                    bucket_in:'<%= config.imageBucket %>',
-                    bucket_out:'<%= config.imageBucket %>'
+                config: {
+                    bucket_in: '<%= config.imageBucket %>',
+                    bucket_out: '<%= config.imageBucket %>'
+                }
+            },
+            webpConverter: {
+                src: 'src/app.py',
+                dest: 'dist/lambda/',
+                config: {
+                    keepOld:false,
+                    format:'webp'
                 }
             }
         }
@@ -106,7 +123,15 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-aws-s3');
     grunt.loadNpmTasks('grunt-replace');
     // Default task
-    grunt.registerTask('default', ['lambda-prep', 'aws_s3:lambda', 'aws:updateLambda']);
+    grunt.registerTask('default', [
+        'lambda-prep:composite',
+        'lambda-prep:webpConverter',
+        'aws_s3:lambda',
+        'aws:updateLambda-composite',
+        'aws:updateLambda-webpConverter'
+        ]);
+    grunt.registerTask('lambda-composite', ['lambda-prep:composite', 'aws_s3:lambda', 'aws:updateLambda-composite']);
+    grunt.registerTask('lambda-webpConverter', ['lambda-prep:webpConverter', 'aws_s3:lambda', 'aws:updateLambda-webpConverter']);
     grunt.registerTask('make-env', ['aws:launchEC2Instance']);
     grunt.registerTask('get-env', ['aws_s3:virtenv']);
 
@@ -118,7 +143,7 @@ module.exports = function(grunt) {
         var config = this.data.config;
 
         var envZip = 'env.zip';
-        var envZipFinal = dest + envZip;
+        var envZipFinal = dest + this.target + '.zip';
 
         fs.copySync(envZip, envZipFinal);
 
@@ -144,7 +169,7 @@ module.exports = function(grunt) {
 
                         var buffer = zip.generate({
                             type: "nodebuffer",
-                            compression:'DEFLATE'
+                            compression: 'DEFLATE'
                         });
 
                         fs.writeFile(envZipFinal, buffer, function(err) {
