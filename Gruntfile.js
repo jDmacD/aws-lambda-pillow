@@ -108,6 +108,7 @@ module.exports = function(grunt) {
     // Default task
     grunt.registerTask('default', ['lambda-prep', 'aws_s3:lambda', 'aws:updateLambda']);
     grunt.registerTask('make-env', ['aws:launchEC2Instance']);
+    grunt.registerTask('get-env', ['aws_s3:virtenv']);
 
     grunt.registerMultiTask('lambda-prep', 'prep code for lambda upload', function() {
 
