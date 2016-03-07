@@ -9,9 +9,6 @@ yum update -y
 echo "do dependcy install"
 yum install -y \
 	gcc \
-	#cairo-devel \
-	#mock --enablerepo=epel \
-	#libffi-devel \
 	libtiff-devel \
 	libzip-devel \
 	libjpeg-devel \
@@ -20,11 +17,6 @@ yum install -y \
 	libwebp-devel \
 	tcl-devel \
 	tk-devel
-
-#useradd -s /sbin/nologin mockbuild
-#wget https://kojipkgs.fedoraproject.org//packages/librsvg2/2.40.13/2.fc24/src/librsvg2-2.40.13-2.fc24.src.rpm
-#rpm -Uhv librsvg2-2.40.13-2.fc24.src.rpm
-
 
 echo "copy webp packages"
 cd /usr/lib64/ 
@@ -46,7 +38,6 @@ pip install --verbose --use-wheel pillow
 pip install --verbose --use-wheel simplejson
 pip install --verbose --use-wheel eventlet
 pip install --verbose --use-wheel requests
-#pip install --verbose --use-wheel cairosvg
 #pip install --verbose --use-wheel boto3
 deactivate
 

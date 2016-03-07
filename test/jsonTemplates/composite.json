@@ -1,0 +1,29 @@
+{
+  "Key": "out/test",
+  "format": "webp",
+  "mode": "S3URL",
+  "quality": 40,
+  "images": [
+    {
+      "Key": "back.webp",
+      "x": 0,
+      "y": 0,
+      "height": 200,
+      "width": 200
+    },
+    {
+      "Key": "mid.webp",
+      "x": 100,
+      "y": 100,
+      "height": 200,
+      "width": 200
+    },
+    {
+      "Key": "fore.webp",
+      "x": 0,
+      "y": 0,
+      "height": 200,
+      "width": 200
+    }
+  ]
+}
