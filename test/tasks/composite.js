@@ -44,27 +44,27 @@ describe('composite', function() {
 		})
 	});
 
-	describe('absolute pixels', function() {
+	// describe('absolute pixels', function() {
 
-		var data = {};
+	// 	var data = {};
 
-		before(function (done) {
+	// 	before(function (done) {
 
-			invokeLambda({},function(err, res) {
-				if (err) {
-					done(err);
-				} else {
-					data = res;
-					done();
-				}
-			})
+	// 		invokeLambda({},function(err, res) {
+	// 			if (err) {
+	// 				done(err);
+	// 			} else {
+	// 				data = res;
+	// 				done();
+	// 			}
+	// 		})
 			
-		});
+	// 	});
 
-		it('should do what...', function (done) {
-			done()
-		});
+	// 	it('should do what...', function (done) {
+	// 		done()
+	// 	});
 		
-	});
+	// });
 	
 });

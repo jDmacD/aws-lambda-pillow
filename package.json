@@ -4,7 +4,7 @@
   "description": "A set of Python Pillow Lambda functions to cover common cases",
   "main": "Gruntfile.js",
   "scripts": {
-    "test": "grunt test"
+    "test": "mocha test/tasks/*.js"
   },
   "repository": {
     "type": "git",
