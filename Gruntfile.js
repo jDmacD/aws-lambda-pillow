@@ -32,4 +32,5 @@ module.exports = function(grunt) {
     grunt.registerTask('lambda-svgConverter', ['lambda-prep:svgConverter', 'aws_s3:lambda', 'aws:updateLambda-svgConverter']);
     grunt.registerTask('make-env', ['aws:launchEC2Instance']);
     grunt.registerTask('get-env', ['aws_s3:virtenv']);
+    grunt.registerTask('test-local', ['env:config', 'mochaTest:test']);
 };

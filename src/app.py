@@ -190,10 +190,12 @@ def get_image(image):
 
 def save_image(img, quality, format, ContentType, Key, Bucket):
 
+	Metadata={'width': str(img.size[0]), 'height', str(img.size[1]), 'format': img.format, 'mode': img.mode}
+
 	object = s3.Object(Bucket, Key)
 	image_buffer = BytesIO()
 	img.save(image_buffer, quality=quality, format=format)
-	res = object.put(Body=image_buffer.getvalue(), ContentType=ContentType)
+	res = object.put(Body=image_buffer.getvalue(), ContentType=ContentType, Metadata=Metadata)
 	return res
 
 
